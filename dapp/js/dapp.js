@@ -63,6 +63,7 @@ async function main() {
       location.reload();
     });
 
+    updateStats();
     
 }
 
