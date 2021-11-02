@@ -1,5 +1,3 @@
-import { WebsocketProvider } from "web3-core";
-
 var web3 = AlchemyWeb3.createAlchemyWeb3("wss://polygon-mumbai.g.alchemy.com/v2/Ptsa6JdQQUtTbRGM1Elvw_ed3cTszLoj");
 var BN = web3.utils.BN;
 
