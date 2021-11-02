@@ -111,7 +111,7 @@ async function updateStats() {
     TVL = web3.utils.fromWei(vaultBal) * web3.utils.fromWei(vaultPrice);
     userBal = await vault.methods.balanceOf(ethereum.selectedAddress).call();
     userShare = web3.utils.fromWei(userBal) / web3.utils.fromWei(vaultBal) * 100; 
-    var since = (TVL - 1) / 1 * 100;
+    var since = (web3.utils.fromWei(vaultPrice) - 1) / 1 * 100;
     console.log(vaultBal, vaultPrice, TVL);
     $(".tvl").text( TVL.toFixed(4) );
     $(".since").text( since.toFixed(2) + "%" );
