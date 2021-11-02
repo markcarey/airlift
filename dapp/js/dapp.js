@@ -1,7 +1,7 @@
 var web3 = AlchemyWeb3.createAlchemyWeb3("wss://polygon-mumbai.g.alchemy.com/v2/Ptsa6JdQQUtTbRGM1Elvw_ed3cTszLoj");
 var BN = web3.utils.BN;
 
-const vaultAddress = "0xEAaf297Ac0b3F1b8c576529eaa8A9E3984495D4E";
+const vaultAddress = "0xaf8682BE6D1aE0BBBA1D04FAE698a64C465A732e";
 const vault = new web3.eth.Contract(vaultABI, vaultAddress);
 const wethAddress = "0x3C68CE8504087f89c640D02d133646d98e64ddd9";
 const WETH = new web3.eth.Contract(tokenABI, wethAddress);
