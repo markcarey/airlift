@@ -72,7 +72,7 @@ async function main() {
     console.log(vaultBal, vaultPrice, TVL);
     $(".tvl").text( TVL.toFixed(4) );
     $(".since").text( since.toFixed(2) + "%" );
-    $(".balance").text( web3.utils.fromWei(userBal).toFixed(4) );
+    $(".balance").text( parseFloat(web3.utils.fromWei(userBal)).toFixed(4) );
     $(".share").text( userShare.toFixed(4) + "%" );
 }
 
