@@ -1,3 +1,5 @@
+import { WebsocketProvider } from "web3-core";
+
 var web3 = AlchemyWeb3.createAlchemyWeb3("wss://polygon-mumbai.g.alchemy.com/v2/Ptsa6JdQQUtTbRGM1Elvw_ed3cTszLoj");
 var BN = web3.utils.BN;
 
@@ -15,6 +17,9 @@ var wethBal = 0;
 var vaultBal = 0;
 var vaultPrice = 0;
 var TVL = 0;
+var since = 0;
+var userBal = 0;
+var userShare = 0;
 
 function abbrAddress(address){
     if (!address) {
@@ -63,8 +68,14 @@ async function main() {
     vaultBal = await vault.methods.totalSupply().call();
     vaultPrice = await vault.methods.getPricePerFullShare().call();
     TVL = web3.utils.fromWei(vaultBal) * web3.utils.fromWei(vaultPrice);
+    userBal = await vault.methods.balanceOf(ethereum.selectedAddress).call();
+    userShare = web3.utils.fromWei(userBal) / web3.utils.fromWei(vaultBal) * 100; 
+    var since = (TVL - 1) / 1 * 100;
     console.log(vaultBal, vaultPrice, TVL);
     $(".tvl").text( TVL.toFixed(4) );
+    $(".since").text( since.toFixed(2) + "%" );
+    $(".balance").text( web3.utils.fromWei(userBal).toFixed(4) );
+    $(".share").text( userShare.toFixed(4) + "%" );
 }
 
 
