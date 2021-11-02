@@ -62,7 +62,7 @@ async function main() {
 
     vaultBal = await vault.methods.totalSupply().call();
     vaultPrice = await vault.methods.getPricePerFullShare().call();
-    TVL = web.utils.fromWei(vaultBal) * web3.utils.fromWei(vaultPrice);
+    TVL = web3.utils.fromWei(vaultBal) * web3.utils.fromWei(vaultPrice);
     console.log(vaultBal, vaultPrice, TVL);
 }
 
