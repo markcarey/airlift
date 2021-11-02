@@ -233,6 +233,7 @@ $( document ).ready(function() {
                     web3.eth.clearSubscriptions();
                     //console.log("Bid received!");
                     $("button.deposit").text("Deposited!");
+                    $("#amount").val(0.00);
                     updateStats();
                 }
             });
@@ -304,6 +305,7 @@ $( document ).ready(function() {
                 web3.eth.clearSubscriptions();
                 //console.log("Bid received!");
                 $("button.withdraw").text("Withdrawn!");
+                $("#amount").val(0.00);
                 updateStats();
             }
         });
