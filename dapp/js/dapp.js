@@ -112,13 +112,11 @@ function wrongNetworkModal(ctx){
     var html = "";
     html = `
     <div class="fade modal-backdrop show"></div>
-    <div role="dialog" aria-modal="true" class="fade modal show" tabindex="-1" style="display: block;">
+    <div role="dialog" aria-modal="true" class="modal-theme modal-switch light modal" tabindex="-1" style="display: block;">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
-                    <div class="modal-title h4">Wrong Network Detected</div>
-                </div>
-                <div class="modal-body">
+            <div class="modal-header"><div class="modal-title-custom modal-title h4">Switch Network</div></div>
+                <div class="modal-body" style="margin-left: 20px;">
                     <p>Airlift is currently on the Mumbai Test Network. Mainnet launch coming soon.</p>
                     <p><b>To get started, please switch your network by following the instructions below:</b></p>
                     <ol>

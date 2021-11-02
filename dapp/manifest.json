@@ -1,0 +1,31 @@
+{
+    "background_color": "#fff",
+    "display": "standalone",
+    "homepage_url": "https://airlift.finance",
+    "providedBy": {
+        "name": "Airlift Finance",
+        "url": "https://airlift.finance"
+    },
+    "icons": [
+        {
+            "src": "/images/192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/images/512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "orientation": "portrait",
+    "name": "Airlift Finance",
+    "description": "Lifting you up.",
+    "iconPath": "/images/256x256.png",
+    "short_name": "Airlift",
+    "start_url": ".",
+    "theme_color": "#ff007a",
+    "skylink": "AQBqQxbY7k4S-H0pHHQQmbaOP703U-DNnuCCpqnGYbeBSg"
+}
