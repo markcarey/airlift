@@ -167,6 +167,7 @@ $( document ).ready(function() {
     $(".nav-withdraw").click(function(){
         $(this).parent().siblings().find(".nav-link").removeClass("active");
         $(this).addClass("active");
+        $(".card-title").text("Withdraw");
         $(".deposit").hide();
         $(".withdraw").show();
         $("#amount").val(0.0);
@@ -177,6 +178,7 @@ $( document ).ready(function() {
     $(".nav-deposit").click(function(){
         $(this).parent().siblings().find(".nav-link").removeClass("active");
         $(this).addClass("active");
+        $(".card-title").text("Deposit");
         $(".withdraw").hide();
         $(".deposit").show();
         $("#amount").val(0.0);
