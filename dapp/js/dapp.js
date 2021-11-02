@@ -32,6 +32,7 @@ async function main() {
         wethBal = await WETH.methods.balanceOf(ethereum.selectedAddress).call();
         console.log(wethBal);
         console.log(web3.utils.fromWei(wethBal));
+        $(".card-buttons button.connect").hide().next().show();
     }
 
     userChain = await ethereum.request({ method: 'eth_chainId' });
@@ -80,6 +81,7 @@ async function connectWallet() {
                 wethBal = await WETH.methods.balanceOf(ethereum.selectedAddress).call();
                 console.log(wethBal);
                 console.log(web3.utils.fromWei(wethBal));
+                $(".card-buttons button.connect").hide().next().show();
             })
             .catch(reason => {
                 // Handle error. Likely the user rejected the login.
