@@ -77,7 +77,7 @@ async function connectWallet() {
                 //console.log(result);
                 accounts = result;
                 $(".app-wallet-details button.connect span").text( abbrAddress() );
-                wethBal = await weth.methods.balanceOf(ethereum.selectedAddress).call();
+                wethBal = await WETH.methods.balanceOf(ethereum.selectedAddress).call();
                 console.log(wethBal);
                 console.log(web3.utils.fromWei(wethBal));
             })
