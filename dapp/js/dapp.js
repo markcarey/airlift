@@ -114,6 +114,37 @@ function fromWei(amount) {
     return web3.utils.fromWei(new BN(amount));
 }
 
+async function addToken() {
+    const tokenAddress = vaultAddress;
+    const tokenSymbol = 'WETH2X';
+    const tokenDecimals = 18;
+    const tokenImage = 'https://airlift.finance/images/weth2x.png';
+
+    try {
+        // wasAdded is a boolean. Like any RPC method, an error may be thrown.
+        const wasAdded = await ethereum.request({
+            method: 'wallet_watchAsset',
+            params: {
+            type: 'ERC20', // Initially only supports ERC20, but eventually more!
+            options: {
+                address: tokenAddress, // The address that the token is at.
+                symbol: tokenSymbol, // A ticker symbol or shorthand, up to 5 chars.
+                decimals: tokenDecimals, // The number of decimals in the token
+                image: tokenImage, // A string url of the token logo
+            },
+            },
+        });
+
+        if (wasAdded) {
+            console.log('Thanks for your interest!');
+        } else {
+            console.log('Your loss!');
+        }
+    } catch (error) {
+        console.log(error);
+    }
+}
+
 
 
 
@@ -126,11 +157,45 @@ $( document ).ready(function() {
         return false;
     });
 
+    $(".add").click(function(){
+        addToken();
+        return false;
+    });
+
     $(".deposit").click(async function(){
         var amt = $("#amount").val();
         if ( approved >= amt ) {
             $("button.deposit").text("Waiting...");
-            // TODO:
+            const nonce = await web3.eth.getTransactionCount(accounts[0], 'latest');
+
+            //the transaction
+            const tx = {
+                'from': ethereum.selectedAddress,
+                'to': vaultAddress,
+                'gasPrice': gas,
+                'nonce': "" + nonce,
+                'data': vault.methods.deposit(web3.utils.toHex(web3.utils.toWei(amt))).encodeABI()
+            };
+            //console.log(tx);
+
+            const txHash = await ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [tx],
+            });
+            //console.log(txHash);
+            var pendingTxHash = txHash;
+            web3.eth.subscribe('newBlockHeaders', async (error, event) => {
+                if (error) {
+                    console.log("error", error);
+                }
+                const blockTxHashes = (await web3.eth.getBlock(event.hash)).transactions;
+
+                if (blockTxHashes.includes(pendingTxHash)) {
+                    web3.eth.clearSubscriptions();
+                    //console.log("Bid received!");
+                    $("button.deposit").text("Deposited!");
+                }
+            });
         } else {
             // need approval
             $("button.deposit").text("Approving...");
@@ -169,6 +234,7 @@ $( document ).ready(function() {
     });
 
 });
+
 
 
 // HTML templates
