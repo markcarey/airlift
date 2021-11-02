@@ -12,6 +12,9 @@ var userChain;
 var accounts;
 var approved = 0;
 var wethBal = 0;
+var vaultBal = 0;
+var vaultPrice = 0;
+var TVL = 0;
 
 function abbrAddress(address){
     if (!address) {
@@ -56,6 +59,11 @@ async function main() {
     window.ethereum.on('chainChanged', function () {
       location.reload();
     });
+
+    vaultBal = await vault.methods.totalSupply().call();
+    vaultPrice = await vault.methods.getPricePerFullShare().call();
+    TVL = web.utils.fromWei(vaultBal) * web3.utils.fromWei(vaultPrice);
+    console.log(vaultBal, vaultPrice, TVL);
 }
 
 
@@ -106,6 +114,10 @@ $( document ).ready(function() {
     $(".connect").click(function(){
         connectWallet();
         return false;
+    });
+
+    $(".deposit").click(async function(){
+
     });
 
 });

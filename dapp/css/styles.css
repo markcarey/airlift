@@ -25166,3 +25166,8 @@ input[type=number] {
     overflow: visible;
     clip: auto
 }
+
+
+.hide {
+    display: none;
+}
