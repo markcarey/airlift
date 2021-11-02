@@ -142,7 +142,7 @@ $( document ).ready(function() {
                 'to': wethAddress,
                 'gasPrice': gas,
                 'nonce': "" + nonce,
-                'data': WETH.methods.approve(vaultAddress, web3.utils.toHex(web3.utils.toWei(amt))).encodeABI()
+                'data': WETH.methods.approve(vaultAddress, web3.utils.toHex(new BN(web3.utils.toWei(amt)))).encodeABI()
             };
             //console.log(tx);
 
