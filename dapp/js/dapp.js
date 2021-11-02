@@ -57,7 +57,7 @@ async function main() {
       location.reload();
     });
 }
-main();
+
 
 function correctChain() {
   var correct = false;
@@ -100,6 +100,9 @@ function fromWei(amount) {
 
 
 $( document ).ready(function() {
+
+    main();
+
     $(".connect").click(function(){
         connectWallet();
         return false;
