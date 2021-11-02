@@ -11,6 +11,7 @@ var dappChain = 80001; // default to Mumbai
 var userChain;
 var accounts;
 var approved = 0;
+var wethBal = 0;
 
 function abbrAddress(address){
     if (!address) {
@@ -18,6 +19,7 @@ function abbrAddress(address){
     }
     return address.slice(0,4) + "..." + address.slice(address.length - 4);
 }
+
 
 async function main() {
     dappChain = await web3.eth.getChainId();
@@ -27,6 +29,9 @@ async function main() {
     //connectWallet();
     if (accounts.length > 0) {
         $(".app-wallet-details button.connect span").text( abbrAddress() );
+        wethBal = await weth.methods.balanceOf(ethereum.selectedAddress).call();
+        console.log(wethBal);
+        console.log(web3.utils.fromWei(wethBal));
     }
 
     userChain = await ethereum.request({ method: 'eth_chainId' });
@@ -72,6 +77,9 @@ async function connectWallet() {
                 //console.log(result);
                 accounts = result;
                 $(".app-wallet-details button.connect span").text( abbrAddress() );
+                wethBal = await weth.methods.balanceOf(ethereum.selectedAddress).call();
+                console.log(wethBal);
+                console.log(web3.utils.fromWei(wethBal));
             })
             .catch(reason => {
                 // Handle error. Likely the user rejected the login.
