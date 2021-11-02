@@ -18,6 +18,7 @@ var TVL = 0;
 var since = 0;
 var userBal = 0;
 var userShare = 0;
+var mode = "deposit";
 
 function abbrAddress(address){
     if (!address) {
@@ -106,6 +107,7 @@ function fromWei(amount) {
 }
 
 async function updateStats() {
+    wethBal = await WETH.methods.balanceOf(ethereum.selectedAddress).call();
     vaultBal = await vault.methods.totalSupply().call();
     vaultPrice = await vault.methods.getPricePerFullShare().call();
     TVL = web3.utils.fromWei(vaultBal) * web3.utils.fromWei(vaultPrice);
@@ -160,6 +162,36 @@ $( document ).ready(function() {
     $(".connect").click(function(){
         connectWallet();
         return false;
+    });
+
+    $(".nav-withdraw").click(function(){
+        $(".nav-link").siblings().removeClass("active");
+        $(this).addClass("active");
+        $(".deposit").hide();
+        $(".withdraw").show();
+        $("#amount").val(0.0);
+        mode = "withdraw";
+        return false;
+    });
+
+    $(".nav-deposit").click(function(){
+        $(".nav-link").siblings().removeClass("active");
+        $(this).addClass("active");
+        $(".withdraw").hide();
+        $(".desposit").show();
+        $("#amount").val(0.0);
+        mode = "deposit";
+        return false;
+    });
+
+    $(".max").click(function(){
+        var max = 0;
+        if (mode == "deposit") {
+            max = web3.utils.fromWei(wethBal);
+        } else {
+            max = web3.utils.fromWei(userBal);
+        }
+        $("#amount").val(max);
     });
 
     $(".add").click(function(){

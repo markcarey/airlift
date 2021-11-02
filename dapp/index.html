@@ -65,9 +65,9 @@
                             class="d-inline-block align-top">Airlift</a>
                     <div class=" float-right top-nav-links" id="navbarSupportedContent">
                         <ul class="navbar-nav me-auto mb-lg-0">
-                            <li class="nav-item"><a class="nav-link active" aria-current="page" href="#">Deposit</a>
+                            <li class="nav-item"><a class="nav-link active nav-deposit" aria-current="page" href="#">Deposit</a>
                             </li>
-                            <li class="nav-item"><a class="nav-link" aria-current="page" href="#">Withdraw</a></li>
+                            <li class="nav-item"><a class="nav-link nav-withdraw" aria-current="page" href="#">Withdraw</a></li>
 
                             </li>
                         </ul>
@@ -115,12 +115,17 @@
                                                 <div class=" col-6 col-md-6">
                                                     <div class="align-end"><label class="form-balance-label"></label>
                                                     </div>
-                                                    <div class="align-end"><button class="btn btn-curr ml-2"><img
+                                                    <div class="align-end">
+                                                        <button class="btn btn-curr ml-2 max" style="background-color: lightgrey">
+                                                            <p class="curr-text">MAX</p>
+                                                        </button>
+                                                        <button class="btn btn-curr ml-2"><img
                                                                 class="curr-image"
                                                                 src="/images/weth.svg"
                                                                 alt="">
                                                             <p class="curr-text">WETH</p>
-                                                        </button></div>
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -128,6 +133,7 @@
                                     <div class="d-grid py-3 card-buttons">
                                         <button class="btn btn-lg btn-custom-primary connect">Connect Wallet</button>
                                         <button class="btn btn-lg btn-custom-primary deposit hide">Approve</button>
+                                        <button class="btn btn-lg btn-custom-primary withdraw hide">Withdraw</button>
                                     </div>
                                     <div class="price_head">
                                         <div class="price_aa">
@@ -165,7 +171,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@alch/alchemy-web3@latest/dist/alchemyWeb3.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
     <script src="/js/abis.js?v=1"></script>
-    <script src="/js/dapp.js?v=27"></script>
+    <script src="/js/dapp.js?v=29"></script>
 
 </body>
 
