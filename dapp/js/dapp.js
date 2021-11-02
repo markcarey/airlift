@@ -63,17 +63,7 @@ async function main() {
       location.reload();
     });
 
-    vaultBal = await vault.methods.totalSupply().call();
-    vaultPrice = await vault.methods.getPricePerFullShare().call();
-    TVL = web3.utils.fromWei(vaultBal) * web3.utils.fromWei(vaultPrice);
-    userBal = await vault.methods.balanceOf(ethereum.selectedAddress).call();
-    userShare = web3.utils.fromWei(userBal) / web3.utils.fromWei(vaultBal) * 100; 
-    var since = (TVL - 1) / 1 * 100;
-    console.log(vaultBal, vaultPrice, TVL);
-    $(".tvl").text( TVL.toFixed(4) );
-    $(".since").text( since.toFixed(2) + "%" );
-    $(".balance").text( parseFloat(web3.utils.fromWei(userBal)).toFixed(4) );
-    $(".share").text( userShare.toFixed(4) + "%" );
+    
 }
 
 
@@ -112,6 +102,20 @@ async function connectWallet() {
 
 function fromWei(amount) {
     return web3.utils.fromWei(new BN(amount));
+}
+
+async function updateStats() {
+    vaultBal = await vault.methods.totalSupply().call();
+    vaultPrice = await vault.methods.getPricePerFullShare().call();
+    TVL = web3.utils.fromWei(vaultBal) * web3.utils.fromWei(vaultPrice);
+    userBal = await vault.methods.balanceOf(ethereum.selectedAddress).call();
+    userShare = web3.utils.fromWei(userBal) / web3.utils.fromWei(vaultBal) * 100; 
+    var since = (TVL - 1) / 1 * 100;
+    console.log(vaultBal, vaultPrice, TVL);
+    $(".tvl").text( TVL.toFixed(4) );
+    $(".since").text( since.toFixed(2) + "%" );
+    $(".balance").text( parseFloat(web3.utils.fromWei(userBal)).toFixed(4) );
+    $(".share").text( userShare.toFixed(4) + "%" );
 }
 
 async function addToken() {
@@ -194,6 +198,7 @@ $( document ).ready(function() {
                     web3.eth.clearSubscriptions();
                     //console.log("Bid received!");
                     $("button.deposit").text("Deposited!");
+                    updateStats();
                 }
             });
         } else {
