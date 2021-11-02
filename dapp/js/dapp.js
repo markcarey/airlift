@@ -273,6 +273,42 @@ $( document ).ready(function() {
         }
     });
 
+    $(".withdraw").click(async function(){
+        var amt = $("#amount").val();
+        $("button.withdraw").text("Waiting...");
+        const nonce = await web3.eth.getTransactionCount(accounts[0], 'latest');
+
+        //the transaction
+        const tx = {
+            'from': ethereum.selectedAddress,
+            'to': vaultAddress,
+            'gasPrice': gas,
+            'nonce': "" + nonce,
+            'data': vault.methods.withdraw(web3.utils.toHex(web3.utils.toWei(amt))).encodeABI()
+        };
+        //console.log(tx);
+
+        const txHash = await ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [tx],
+        });
+        //console.log(txHash);
+        var pendingTxHash = txHash;
+        web3.eth.subscribe('newBlockHeaders', async (error, event) => {
+            if (error) {
+                console.log("error", error);
+            }
+            const blockTxHashes = (await web3.eth.getBlock(event.hash)).transactions;
+
+            if (blockTxHashes.includes(pendingTxHash)) {
+                web3.eth.clearSubscriptions();
+                //console.log("Bid received!");
+                $("button.withdraw").text("Withdrawn!");
+                updateStats();
+            }
+        });
+    });
+
 });
 
 
