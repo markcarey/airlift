@@ -29,7 +29,7 @@ async function main() {
     //connectWallet();
     if (accounts.length > 0) {
         $(".app-wallet-details button.connect span").text( abbrAddress() );
-        wethBal = await weth.methods.balanceOf(ethereum.selectedAddress).call();
+        wethBal = await WETH.methods.balanceOf(ethereum.selectedAddress).call();
         console.log(wethBal);
         console.log(web3.utils.fromWei(wethBal));
     }
