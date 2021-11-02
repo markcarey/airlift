@@ -1,0 +1,30 @@
+{
+  "name": "airlift",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/markcarey/airlift.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/markcarey/airlift/issues"
+  },
+  "homepage": "https://github.com/markcarey/airlift#readme",
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "ethers": "^5.5.1",
+    "hardhat": "^2.6.7"
+  },
+  "dependencies": {
+    "@alch/alchemy-web3": "^1.1.7",
+    "@chainlink/contracts": "^0.2.2",
+    "@openzeppelin/contracts": "^3.3.0",
+    "dotenv": "^10.0.0"
+  }
+}
