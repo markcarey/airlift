@@ -165,7 +165,7 @@ $( document ).ready(function() {
     });
 
     $(".nav-withdraw").click(function(){
-        $(".nav-link").siblings().removeClass("active");
+        $(this).siblings().removeClass("active");
         $(this).addClass("active");
         $(".deposit").hide();
         $(".withdraw").show();
@@ -175,10 +175,10 @@ $( document ).ready(function() {
     });
 
     $(".nav-deposit").click(function(){
-        $(".nav-link").siblings().removeClass("active");
+        $(this).siblings().removeClass("active");
         $(this).addClass("active");
         $(".withdraw").hide();
-        $(".desposit").show();
+        $(".deposit").show();
         $("#amount").val(0.0);
         mode = "deposit";
         return false;
