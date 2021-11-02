@@ -72,7 +72,7 @@ async function main() {
     console.log(vaultBal, vaultPrice, TVL);
     $(".tvl").text( TVL.toFixed(4) );
     $(".since").text( since.toFixed(2) + "%" );
-    $(".balance").text( parseFloat(web3.utils.fromWei(userBal)).toFixed(4) );
+    $(".balance").text( parseFloat(web3.utils.fromWei(userBal)).toFixed(4) + " WETH2X" );
     $(".share").text( userShare.toFixed(4) + "%" );
 }
 
@@ -127,7 +127,45 @@ $( document ).ready(function() {
     });
 
     $(".deposit").click(async function(){
+        var amt = $("#amount");
+        if ( approved >= amt ) {
+            $("button.deposit").text("Waiting...");
+            // TODO:
+        } else {
+            // need approval
+            $("button.deposit").text("Approving...");
+            const nonce = await web3.eth.getTransactionCount(accounts[0], 'latest');
 
+            //the transaction
+            const tx = {
+                'from': ethereum.selectedAddress,
+                'to': wethAddress,
+                'gasPrice': gas,
+                'nonce': "" + nonce,
+                'data': WETH.methods.approve(vaultAddress, web3.utils.toHex(web3.utils.toWei(amt))).encodeABI()
+            };
+            //console.log(tx);
+
+            const txHash = await ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [tx],
+            });
+            //console.log(txHash);
+            var pendingTxHash = txHash;
+            web3.eth.subscribe('newBlockHeaders', async (error, event) => {
+                if (error) {
+                    console.log("error", error);
+                }
+                const blockTxHashes = (await web3.eth.getBlock(event.hash)).transactions;
+
+                if (blockTxHashes.includes(pendingTxHash)) {
+                    web3.eth.clearSubscriptions();
+                    //console.log("Bid received!");
+                    $("button.deposit").text("Deposit");
+                    approved = amt;
+                }
+            });
+        }
     });
 
 });
