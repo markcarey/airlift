@@ -25171,3 +25171,6 @@ input[type=number] {
 .hide {
     display: none;
 }
+.add:link, .add:hover, .add:visited {
+    color: var(--theme-price-text);
+}
