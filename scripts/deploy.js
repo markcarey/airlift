@@ -1,5 +1,3 @@
-
-
 async function main() {
 
   require('dotenv').config();
@@ -8,23 +6,39 @@ async function main() {
   const PRIVATE_KEY = process.env.PRIVATE_KEY;
   
   const { createAlchemyWeb3 } = require("@alch/alchemy-web3");
-  const web3 = createAlchemyWeb3(API_URL);
+  //const web3 = createAlchemyWeb3(API_URL);
 
-    // Grab the contract factory 
+    const chain = "polygon";
+    var args = {};
 
-    // Mumbai
-    const weth = "0x3C68CE8504087f89c640D02d133646d98e64ddd9";
-    const wmatic = "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889";
-    const aaveDataProvider = "0xFA3bD19110d986c5e5E9DD5F69362d05035D045B";
-    const aaveLendingPool = "0x9198F13B08E299d85E096929fA9781A1E3d5d827";
-    const aaveIncentivesController = "0xd41aE58e803Edf4304334acCE4DC4Ec34a63C644";
-    const uniRouter = "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506";
-    const chainlink = "0x0715A7794a1dc8e42615F059dD6e406A6594651A";
-    const dai = "0x001B3B4d0F3714Ca98ba10F6042DaEbF0B1B7b6F";
-    const usdc = "0x2058A9D7613eEE744279e3856Ef0eAda5FCbaA7e";
-    const aaveLendingPoolAddressProvider = "0x178113104fEcbcD7fF8669a0150721e231F0FD4B";
+    if ( chain == "mumbai" ) {
+      // Mumbai
+      args.weth = "0x3C68CE8504087f89c640D02d133646d98e64ddd9";
+      args.wmatic = "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889";
+      args.aaveDataProvider = "0xFA3bD19110d986c5e5E9DD5F69362d05035D045B";
+      args.aaveLendingPool = "0x9198F13B08E299d85E096929fA9781A1E3d5d827";
+      args.aaveIncentivesController = "0xd41aE58e803Edf4304334acCE4DC4Ec34a63C644";
+      args.uniRouter = "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506";
+      args.chainlink = "0x0715A7794a1dc8e42615F059dD6e406A6594651A";
+      args.dai = "0x001B3B4d0F3714Ca98ba10F6042DaEbF0B1B7b6F";
+      args.usdc = "0x2058A9D7613eEE744279e3856Ef0eAda5FCbaA7e";
+      args.aaveLendingPoolAddressProvider = "0x178113104fEcbcD7fF8669a0150721e231F0FD4B";
+    }
+    if ( chain == "polygon" ) {
+      // Polygon
+      args.weth = "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619";
+      args.wmatic = "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270";
+      args.aaveDataProvider = "0x7551b5D2763519d4e37e8B81929D336De671d46d";
+      args.aaveLendingPool = "0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf";
+      args.aaveIncentivesController = "0x357D51124f59836DeD84c8a1730D72B749d8BC23";
+      args.uniRouter = "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506";
+      args.chainlink = "0x0715A7794a1dc8e42615F059dD6e406A6594651A"; // not updated for Polygon yet
+      args.dai = "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063";
+      args.usdc = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
+      args.aaveLendingPoolAddressProvider = "0x3ac4e9aa29940770aeC38fe853a4bbabb2dA9C19";
+    }
 
-    const pilot = "0x181BB6Abc3F5D9686FA3D9bcBf2B715ff0eE0806";
+    const pilot = PUBLIC_KEY;
     const v = "0xaf8682BE6D1aE0BBBA1D04FAE698a64C465A732e";
     const factor = "1200000000000000000"; // 1.2
 
@@ -32,16 +46,19 @@ async function main() {
     const StrategyLeveraged = await ethers.getContractFactory("StrategyAaveLeveraged");
     const Vault = await ethers.getContractFactory("AirliftVaultV1");
 
-    //const nonce = await web3.eth.getTransactionCount(pilot);
-    //const futureStrategyAddress = ethers.utils.getContractAddress({ from: pilot, nonce: nonce+1 });
-    //console.log(futureStrategyAddress);
+    const nonce = await web3.eth.getTransactionCount(pilot);
+    //const nonce = await hre.network.provider.send("eth_getTransactionCount", [pilot, 'latest']);
+    console.log(nonce);
+    const futureStrategyAddress = ethers.utils.getContractAddress({ from: pilot, nonce: nonce+1 });
+    console.log(futureStrategyAddress);
  
     // Start deployment, returning a promise that resolves to a contract object
 
-    //const contract = await Vault.deploy(futureStrategyAddress, "2X Leveraged WETH", "2XWETH", 10); // Instance of the contract 
+    const vaultContract = await Vault.deploy(futureStrategyAddress, "2X Leveraged WETH", "2XWETH", 10); // Instance of the contract 
+    console.log("Vault deployed to address:", vaultContract.address);
     //const contract = await Strategy.deploy(weth, wmatic, 50, 60, 2, "1000000000000000000", aaveDataProvider, aaveLendingPool, aaveIncentivesController, v, uniRouter, pilot, pilot, pilot);
-    const contract = await StrategyLeveraged.deploy(weth, dai, wmatic, 50, 60, 3, "1000000000000000000", aaveDataProvider, aaveLendingPool, aaveIncentivesController, aaveLendingPoolAddressProvider, v, uniRouter, pilot, pilot, pilot);
-    console.log("Contract deployed to address:", contract.address);
+    const stratContract = await StrategyLeveraged.deploy(args.weth, args.dai, args.wmatic, 50, 60, 15, "1000000000000000000", args.aaveDataProvider, args.aaveLendingPool, args.aaveIncentivesController, args.aaveLendingPoolAddressProvider, vaultContract.address, args.uniRouter, pilot, pilot, pilot);
+    console.log("Strategy deployed to address:", stratContract.address);
  }
  
  main()

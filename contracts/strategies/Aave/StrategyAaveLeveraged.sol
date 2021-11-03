@@ -5,6 +5,7 @@
 
 pragma solidity ^0.6.12;
 
+import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
@@ -18,10 +19,25 @@ import "../../interfaces/aave/ILendingPool.sol";
 import "../../interfaces/aave/ILendingPoolAddressesProvider.sol";
 import "../../interfaces/aave/IPriceOracleGetter.sol";
 import "../../interfaces/common/IUniswapRouterETH.sol";
+import "../../interfaces/common/IUniswapV2Pair.sol";
 import "../Common/FeeManager.sol";
 import "../Common/StratManager.sol";
 
-contract StrategyAaveLeveraged is StratManager, FeeManager {
+interface IUniswapV2Callee {
+    function uniswapV2Call(address sender, uint amount0, uint amount1, bytes calldata data) external;
+}
+
+interface IUniswapV2Factory {
+  event PairCreated(address indexed token0, address indexed token1, address pair, uint);
+  function getPair(address tokenA, address tokenB) external view returns (address pair);
+  function allPairs(uint) external view returns (address pair);
+  function allPairsLength() external view returns (uint);
+  function feeTo() external view returns (address);
+  function feeToSetter() external view returns (address);
+  function createPair(address tokenA, address tokenB) external returns (address pair);
+}
+
+contract StrategyAaveLeveraged is StratManager, FeeManager, IUniswapV2Callee {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -38,6 +54,7 @@ contract StrategyAaveLeveraged is StratManager, FeeManager {
     address public incentivesController;
     address public chainlink;
     address public lendingPoolAddressProvider;
+    address permissionedPairAddress = address(1);
 
     // Routes
     address[] public nativeToWantRoute;
@@ -146,6 +163,24 @@ contract StrategyAaveLeveraged is StratManager, FeeManager {
      */
     function _leverage(uint256 _amount) internal {
         if (_amount < risk.minLeverage) { return; }
+        uint256 wantBal = availableWant();
+        if ( _amount > wantBal ) {
+            _amount = wantBal;
+        }
+        if (_amount == 0) { return; }
+        ILendingPool(lendingPool).deposit(want, _amount, address(this), 0);
+        uint256 needed = 0;
+        for (uint i = 0; i < risk.borrowDepth; i++) {
+            _amount = _amount.mul(risk.borrowRate).div(100);
+            needed += _amount;
+        }
+        if (needed > 0) {
+            _flashSwap(want, needed, borrow);
+        }
+    }
+
+    function _leverageOLD(uint256 _amount) internal {
+        if (_amount < risk.minLeverage) { return; }
 
         uint256 borrowPrice = _getAssetPrice(borrow);
 
@@ -204,12 +239,17 @@ contract StrategyAaveLeveraged is StratManager, FeeManager {
     }
 
 
+    function _deleverage() internal {
+        (,uint256 borrowedBal) = userReserves();
+        _flashSwap(borrow, borrowedBal, want);
+    }
+
     /**
      * @dev Incrementally alternates between paying part of the debt and withdrawing part of the supplied
      * collateral. Continues to do this until it repays the entire debt and withdraws all the supplied {want}
      * from the system
      */
-    function _deleverage() internal {
+    function _deleverageOLD() internal {
         uint256 wantBal = IERC20(want).balanceOf(address(this));
         uint256 borrowBal = IERC20(borrow).balanceOf(address(this));
         (uint256 supplyBal, uint256 borrowedBal) = userReserves();
@@ -326,6 +366,19 @@ contract StrategyAaveLeveraged is StratManager, FeeManager {
         require(_factor > 1e18, "!factor");
         risk.minHealthFactor = _factor;
         _healthCheck();
+    }
+
+     /**
+     * @dev Updates the borrow asset used and swaps the debt from the old to the new asset
+     * @param _borrow address of new borrow asset
+     */
+    function setBorrow(address _borrow) external onlyManager {
+        require(_borrow != borrow, "!same");
+        (,uint256 borrowedBal) = userReserves();
+        require(borrowedBal > 0, "!nodebt");
+        IERC20(_borrow).approve(lendingPool, uint256(-1));
+        _flashSwap(borrow, borrowedBal, _borrow);
+        borrow = _borrow;
     }
 
     /**
@@ -552,4 +605,87 @@ contract StrategyAaveLeveraged is StratManager, FeeManager {
         IERC20(want).safeApprove(unirouter, 0);
         IERC20(native).safeApprove(unirouter, 0);
     }
+
+
+    // v2 Flash Swaps
+    function _flashSwap(
+        address _tokenBorrow,
+        uint _amount,
+        address _tokenPay
+    ) private {
+        console.log("start flash swap", _tokenBorrow, _amount, _tokenPay);
+        IUniswapV2Factory uniswapV2Factory = IUniswapV2Factory(0xc35DADB65012eC5796536bD9864eD8773aBc74C4); // sushi
+        permissionedPairAddress = uniswapV2Factory.getPair(_tokenBorrow, _tokenPay);
+        address pairAddress = permissionedPairAddress;
+        require(permissionedPairAddress != address(0), "Requested pair is not available.");
+        address token0 = IUniswapV2Pair(pairAddress).token0();
+        address token1 = IUniswapV2Pair(pairAddress).token1();
+        uint amount0Out = _tokenBorrow == token0 ? _amount : 0;
+        uint amount1Out = _tokenBorrow == token1 ? _amount : 0;
+        bytes memory data = abi.encode(
+            _tokenBorrow,
+            _amount,
+            _tokenPay
+        );
+        IUniswapV2Pair(pairAddress).swap(amount0Out, amount1Out, address(this), data);
+    }
+
+    // @notice Function is called by the Uniswap V2 pair's `swap` function
+    function uniswapV2Call(address _sender, uint _amount0, uint _amount1, bytes calldata _data) external override {
+        console.log("start uniswapV2Call", _sender, _amount0, _amount1);
+        // access control
+        require(msg.sender == permissionedPairAddress, "only permissioned UniswapV2 pair can call");
+        require(_sender == address(this), "only this contract may initiate");
+        // decode data
+        (
+            address _tokenBorrow,
+            uint _amount,
+            address _tokenPay
+        ) = abi.decode(_data, (address, uint, address));
+        console.log("decoded", _tokenBorrow, _amount, _tokenPay);
+
+        // compute the amount of _tokenPay that needs to be repaid
+        address pairAddress = permissionedPairAddress; // gas efficiency
+        uint pairBalanceTokenBorrow = IERC20(_tokenBorrow).balanceOf(pairAddress);
+        console.log("pairBalanceTokenBorrow", pairBalanceTokenBorrow);
+        uint pairBalanceTokenPay = IERC20(_tokenPay).balanceOf(pairAddress);
+        console.log("pairBalanceTokenPay", pairBalanceTokenPay);
+        uint amountToRepay = ((1000 * pairBalanceTokenPay * _amount) / (997 * pairBalanceTokenBorrow)) + 1;
+        console.log("amountToRepay", amountToRepay);
+
+        // get the orignal tokens the user requested
+        address tokenBorrowed = _tokenBorrow;
+        address tokenToRepay = _tokenPay;
+
+        // do whatever the user wants
+        //execute(tokenBorrowed, _amount, tokenToRepay, amountToRepay, _userData);
+        if (tokenBorrowed == want) {
+            // leverage
+            uint256 wantBal = availableWant();
+            ILendingPool(lendingPool).deposit(want, wantBal, address(this), 0);
+            ILendingPool(lendingPool).borrow(tokenToRepay, amountToRepay, INTEREST_RATE_MODE, 0, address(this));
+        } else if (tokenToRepay == want) {
+            // deleverage
+            uint256 borrowBal = IERC20(_tokenBorrow).balanceOf(address(this));
+            ILendingPool(lendingPool).repay(_tokenBorrow, borrowBal, INTEREST_RATE_MODE, address(this));
+            //ILendingPool(lendingPool).withdraw(want, amountToRepay, address(this));
+            ILendingPool(lendingPool).withdraw(want, type(uint).max, address(this));
+        } else {
+            // debt swap
+            uint256 borrowBal = IERC20(_tokenBorrow).balanceOf(address(this));
+            console.log("borrow balance", _tokenBorrow, borrowBal);
+            ILendingPool(lendingPool).repay(_tokenBorrow, borrowBal, INTEREST_RATE_MODE, address(this));
+            console.log("after repay aave");
+            borrowBal = IERC20(_tokenBorrow).balanceOf(address(this));
+            console.log("borrow balance", _tokenBorrow, borrowBal);
+            ILendingPool(lendingPool).borrow(tokenToRepay, amountToRepay, INTEREST_RATE_MODE, 0, address(this));
+            uint256 repayBal = IERC20(tokenToRepay).balanceOf(address(this));
+            console.log("repay balance", tokenToRepay, repayBal);
+        }
+
+        // payback loan
+        IERC20(_tokenPay).transfer(pairAddress, amountToRepay);
+    }
+
+
 }

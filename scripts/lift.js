@@ -1,24 +1,37 @@
 require('dotenv').config();
+//const hre = require("hardhat");
 const API_URL = process.env.API_URL;
 const PUBLIC_KEY = process.env.PUBLIC_KEY;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 const { createAlchemyWeb3 } = require("@alch/alchemy-web3");
-const web3 = createAlchemyWeb3(API_URL);
+//const web3 = createAlchemyWeb3(API_URL);
 var BN = web3.utils.BN;
 
 const contract = require("../artifacts/contracts/vaults/Vault.sol/AirliftVaultV1.json");
-const contractAddress = "0xaf8682BE6D1aE0BBBA1D04FAE698a64C465A732e"; // Vault
+const contractAddress = "0x2134b2948b242788585e28E102D2B6dC8268aFBf"; // Vault
 const vaultContract = new web3.eth.Contract(contract.abi, contractAddress);
 
 //const strategy = require("../artifacts/contracts/strategies/Aave/StrategyAave.sol/StrategyAave.json");
 //const stratAddress = "0xEbcCC38Fb90D3e5e45835478137741Dd0FB06341";
 const strategy = require("../artifacts/contracts/strategies/Aave/StrategyAaveLeveraged.sol/StrategyAaveLeveraged.json");
-const stratAddress = "0x5BC4954c441E1D0BC20c952C367A4a96f6D8cEF9";
+const stratAddress = "0x369593aaCA34B5B68E5b85d5F7aeFcdb658039f5";
 const stratContract = new web3.eth.Contract(strategy.abi, stratAddress);
 
-//Mumbai
-const dai = "0x001B3B4d0F3714Ca98ba10F6042DaEbF0B1B7b6F";
+var addr = {};
+const chain = "polygon";
+if (chain == "mumbai") {
+  //Mumbai
+  addr.dai = "0x001B3B4d0F3714Ca98ba10F6042DaEbF0B1B7b6F";
+  addr.WETH = "0x3C68CE8504087f89c640D02d133646d98e64ddd9";
+  addr.usdc = "0x2058A9D7613eEE744279e3856Ef0eAda5FCbaA7e";
+}
+if (chain == "polygon") {
+  //Mumbai
+  addr.dai = "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063";
+  addr.WETH = "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619";
+  addr.usdc = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
+}
 
 var ERC20abi = [
   {
@@ -242,8 +255,8 @@ var ERC20abi = [
       "type": "event"
   }
 ];
-const WETH = "0x3C68CE8504087f89c640D02d133646d98e64ddd9";
-const wethContract = new web3.eth.Contract(ERC20abi, WETH);
+
+const wethContract = new web3.eth.Contract(ERC20abi, addr.WETH);
 
 async function setStrategy(implementation) {
   const nonce = await web3.eth.getTransactionCount(PUBLIC_KEY, 'latest'); //get latest nonce
@@ -596,6 +609,33 @@ async function setMinHealthFactor(factor) {
   });
 }
 
+async function setBorrow(borrow) {
+  const nonce = await web3.eth.getTransactionCount(PUBLIC_KEY, 'latest'); //get latest nonce
+
+  //the transaction
+  const tx = {
+    'from': PUBLIC_KEY,
+    'to': stratAddress,
+    'nonce': nonce,
+    'gas': 3000000,
+    'data': stratContract.methods.setBorrow(borrow).encodeABI()
+  };
+
+  const signPromise = web3.eth.accounts.signTransaction(tx, PRIVATE_KEY);
+  signPromise.then((signedTx) => {
+
+    web3.eth.sendSignedTransaction(signedTx.rawTransaction, function(err, hash) {
+      if (!err) {
+        console.log("The hash of your transaction is: ", hash, "\nCheck Alchemy's Mempool to view the status of your transaction!"); 
+      } else {
+        console.log("Something went wrong when submitting your transaction:", err)
+      }
+    });
+  }).catch((err) => {
+    console.log("Promise failed:", err);
+  });
+}
+
 async function getPrice() {
     const price = await vaultContract.methods.getLatestPrice().call();
     console.log("The Price is: " + price);
@@ -631,8 +671,8 @@ async function userAccountData() {
   console.log("The User Data is: " + JSON.stringify(data));
 }
 
-async function getETHPrice() {
-  const data = await stratContract.methods.getLatestPrice().call();
+async function getETHPrice(address) {
+  const data = await stratContract.methods.getAssetPrice(address).call();
   console.log("The price: " + JSON.stringify(data));
 }
 
@@ -671,13 +711,23 @@ async function getRiskProfile()  {
   console.log("The risk profile is: " + JSON.stringify(data));
 }
 
+async function userReserves()  {
+  const data = await stratContract.methods.userReserves().call();
+  console.log("Reserves: " + JSON.stringify(data));
+}
+
+async function getVaultFromStrat()  {
+  const data = await stratContract.methods.vault().call();
+  console.log("vault is: " + JSON.stringify(data));
+}
+
 async function approve(amount) {
   const nonce = await web3.eth.getTransactionCount(PUBLIC_KEY, 'latest'); //get latest nonce
 
   //the transaction
   const tx = {
     'from': PUBLIC_KEY,
-    'to': WETH,
+    'to': addr.WETH,
     'nonce': nonce,
     'gas': 1000000,
     'data': wethContract.methods.approve(contractAddress, amount).encodeABI()
@@ -725,6 +775,39 @@ async function approveVault(amount) {
   });
 }
 
+async function getTxn(hash) {
+  const data = await web3.eth.getTransaction(hash); 
+  console.log(data);
+}
+
+async function debug(hash) {
+  const trace = await hre.network.provider.send("debug_traceTransaction", [
+    hash
+  ]);
+  console.log(hash);
+}
+
+async function getSomeWETH(eoa) {
+  await hre.network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [eoa],
+  });
+  const signer = await ethers.getSigner(eoa);
+  let contract = new ethers.Contract(
+    addr.WETH,
+    ERC20abi,
+    signer
+  );
+  var bal = contract.balanceOf(eoa);
+  await contract.transfer(PUBLIC_KEY, bal).then((transferResult) => {
+    console.log(transferResult);
+  });
+  await hre.network.provider.request({
+    method: "hardhat_stopImpersonatingAccount",
+    params: [eoa],
+  });
+}
+
 //mint(); //"19290123456790"); // 50 per month
 //issue("0xFa083DfD09F3a7380f6dF6E25dd277E2780de41D", 0, "1000000000000000000"); // Dog Master
 //issue("0x0F74e1B1b88Dfe9DE2dd5d066BE94345ab0590F1", 1, "100000000000000000"); // NFT Words
@@ -747,34 +830,46 @@ async function approveVault(amount) {
 //setMinter("0xEAaf297Ac0b3F1b8c576529eaa8A9E3984495D4E");
 //tokenURI(1);
 
-//setStrategy("0x52ff8DcF61b8743515a3A7Ca5456A6227f43a55d");
-//upgradeStrat();
-//approve('2000000000000000000');
-//deposit('2000000000000000000');
-//userAccountData();
-//rewardsAvailable();
-//lastHarvest();
-//rebalance(20,2);
-//setHarvestOnDeposit();
-//balanceOf(PUBLIC_KEY); // 1000000000000000000 = 1 share
-//approveVault('20000000000000000000');
-//withdraw('500000000000000000'); // 0.5 shares
-//withdraw('250000000000000000'); // 0.25 shares
-//withdrawAll();
-//getETHPrice();
-//directDeposit();
-//directWithdraw('1000000000000000000');
-//borrowAmount();
-//getAssetPrice(dai);
-//panic();
-//unpause();
-//withdrawAmount();
-//targetSupplyinETH('1200000000000000000'); // 1.2
-//deleverageOnce('1200000000000000000'); // 1.2
-//balanceOf();
-//getPricePerFullShare();
-//totalSupply();
-//balanceOfVault(PUBLIC_KEY);
-//withdrawAmountVault('500000000000000000'); 
-//setMinHealthFactor('1250000000000000000'); // 1.25
-getRiskProfile();
+async function main() {
+  //setStrategy("0x52ff8DcF61b8743515a3A7Ca5456A6227f43a55d");
+  //upgradeStrat();
+  //await approve('2000000000000000000');
+  //await deposit('2000000000000000000');
+  userAccountData();
+  //rewardsAvailable();
+  //lastHarvest();
+  //rebalance(20,2);
+  //setHarvestOnDeposit();
+  //approveVault('20000000000000000000');
+  //withdraw('500000000000000000'); // 0.5 shares
+  //withdraw('250000000000000000'); // 0.25 shares
+  //withdrawAll();
+  //getETHPrice(addr.dai);
+  //directDeposit();
+  //directWithdraw('1000000000000000000');
+  //borrowAmount();
+  //getAssetPrice(addr.dai);
+  //panic();
+  //unpause();
+  //withdrawAmount();
+  //targetSupplyinETH('1200000000000000000'); // 1.2
+  //deleverageOnce('1200000000000000000'); // 1.2
+  //balanceOf();
+  //getPricePerFullShare();
+  //totalSupply();
+  //balanceOfVault(PUBLIC_KEY);
+  //withdrawAmountVault('500000000000000000'); 
+  //setMinHealthFactor('1250000000000000000'); // 1.25
+  //getRiskProfile();
+  //balanceOfStrategy();
+  //getTxn("0x08ccd87e8fd594af70ef5d9c212fde8de40196b7315cb93f4f57c697b70b3d97");
+  //debug("0x846f8bebc12d9f1636db99aa0347013e867ab42a2fec14973d112f6a9cd1984d");
+  //getVaultFromStrat();
+  //getSomeWETH("0xfC92D5adbaEB43F6A775C8824E3F9c6bC3d3E201");
+  //getSomeWETH("0x72b40Caa258c237c6F5947E291650808B913e9fC");
+  //getSomeWETH("0x4103c267Fba03A1Df4fe84Bc28092d629Fa3f422"); // 56 WETH
+  //userReserves();
+  //setBorrow(addr.dai);
+}
+
+main();

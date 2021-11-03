@@ -3,7 +3,8 @@
 */
 require('dotenv').config();
 require("@nomiclabs/hardhat-ethers");
-const { API_URL, PRIVATE_KEY } = process.env;
+require("@nomiclabs/hardhat-web3");
+const { API_URL, PRIVATE_KEY, HH_PRIVATE_KEY, HH_API_URL } = process.env;
 module.exports = {
   solidity: {
     version: "0.6.12",
@@ -16,7 +17,14 @@ module.exports = {
   },
    defaultNetwork: "mumbai",
    networks: {
-      hardhat: {},
+      hardhat: {
+        accounts: [{ privateKey: `0x${PRIVATE_KEY}`, balance: "10000000000000000000000"}],
+        forking: {
+          url: HH_API_URL,
+          blockNumber: 20935392  // assumes polygon fork
+        },
+        loggingEnabled: true
+      },
       mumbai: {
         url: API_URL,
         accounts: [`0x${PRIVATE_KEY}`],
