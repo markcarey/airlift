@@ -20,6 +20,7 @@ import "../../interfaces/aave/ILendingPoolAddressesProvider.sol";
 import "../../interfaces/aave/IPriceOracleGetter.sol";
 import "../../interfaces/common/IUniswapRouterETH.sol";
 import "../../interfaces/common/IUniswapV2Pair.sol";
+import "../../interfaces/common/IERC20Extended.sol";
 import "../Common/FeeManager.sol";
 import "../Common/StratManager.sol";
 
@@ -148,7 +149,7 @@ contract StrategyAaveLeveraged is StratManager, FeeManager, IUniswapV2Callee {
         uint256 wantBal = availableWant();
 
         if (healthFactor() < risk.minHealthFactor) {
-            _deleverage();
+            _deleverageAll();
             wantBal = IERC20(want).balanceOf(address(this));
         }
 
@@ -239,9 +240,12 @@ contract StrategyAaveLeveraged is StratManager, FeeManager, IUniswapV2Callee {
     }
 
 
-    function _deleverage() internal {
+    function _deleverageAll() internal {
         (,uint256 borrowedBal) = userReserves();
-        _flashSwap(borrow, borrowedBal, want);
+        _deleverage(borrowedBal);
+    }
+    function _deleverage(uint256 _amount) internal {
+        _flashSwap(borrow, _amount, want);
     }
 
     /**
@@ -348,7 +352,7 @@ contract StrategyAaveLeveraged is StratManager, FeeManager, IUniswapV2Callee {
         require(_borrowRate <= risk.borrowRateMax, "!rate");
         require(_borrowDepth <= BORROW_DEPTH_MAX, "!depth");
 
-        _deleverage();
+        _deleverageAll();
         risk.borrowRate = _borrowRate;
         risk.borrowDepth = _borrowDepth;
 
@@ -386,9 +390,36 @@ contract StrategyAaveLeveraged is StratManager, FeeManager, IUniswapV2Callee {
      */
     function _healthCheck() internal {
         if (healthFactor() < risk.minHealthFactor) {
-            _deleverage();
-            uint256 wantBal = IERC20(want).balanceOf(address(this));
-            _leverage(wantBal);
+            (uint256 totalCollateralETH, uint256 totalDebtETH,,uint256 currentLiquidationThreshold,,) = ILendingPool(lendingPool).getUserAccountData(address(this));
+            uint256 currentTargetHealthFactor = currentLiquidationThreshold.div(risk.borrowRate).mul(1e16);
+            console.log("currentTargetHealthFactor", currentTargetHealthFactor);
+            if ( risk.minHealthFactor > currentTargetHealthFactor ) {
+                // need to reduce the borrowRate
+                uint256 _newBorrowRate = currentLiquidationThreshold.mul(1e16).div(risk.minHealthFactor);
+                console.log("_newBorrowRate", _newBorrowRate);
+                risk.borrowRate = _newBorrowRate;
+            }
+            uint256 _amount = totalCollateralETH.sub(totalDebtETH);
+            uint256 needed = 0;
+            for (uint i = 0; i < risk.borrowDepth; i++) {
+                _amount = _amount.mul(risk.borrowRate).div(100);
+                needed += _amount;
+            }
+            // convert needed debt to {borrow}
+            uint256 decimals = IERC20Extended(borrow).decimals();
+            needed = needed.div( _getAssetPrice(borrow) ).mul(10 ** decimals);
+            (,uint256 borrowedBal) = userReserves();
+            if (borrowedBal > needed) {
+                needed = borrowedBal.sub(needed);
+            } else {
+                needed = 0;
+            }
+            console.log("healthCheck: flash for borrow", needed);
+            if (needed > 0) {
+                _deleverage(needed);
+            }
+            //uint256 wantBal = IERC20(want).balanceOf(address(this));
+            //_leverage(wantBal);
             StratRebalance(risk.borrowRate, risk.borrowDepth);
         }
     }
@@ -462,8 +493,21 @@ contract StrategyAaveLeveraged is StratManager, FeeManager, IUniswapV2Callee {
         uint256 wantBal = availableWant();
 
         if (wantBal < _amount) {
-            _deleverage();
+
+            uint256 needed = 0;
+            uint256 leveragedAmt = _amount;
+            for (uint i = 0; i < risk.borrowDepth; i++) {
+                leveragedAmt = leveragedAmt.mul(risk.borrowRate).div(100);
+                needed += leveragedAmt;
+            }
+            uint256 decimals = IERC20Extended(borrow).decimals();
+            needed = needed.div( _getAssetPrice(borrow) ).mul(10 ** decimals);
+            console.log("withdraw: flash for borrow", needed);
+
+            _deleverage(needed);
+            ILendingPool(lendingPool).withdraw(want, _amount , address(this));
             wantBal = IERC20(want).balanceOf(address(this));
+            console.log("want balance after deleverage and withdrawal", wantBal, _amount);
         }
 
         if (wantBal > _amount) {
@@ -564,7 +608,7 @@ contract StrategyAaveLeveraged is StratManager, FeeManager, IUniswapV2Callee {
     function retireStrat() external {
         require(msg.sender == vault, "!vault");
 
-        _deleverage();
+        _deleverageAll();
 
         uint256 wantBal = IERC20(want).balanceOf(address(this));
         IERC20(want).transfer(vault, wantBal);
@@ -572,7 +616,7 @@ contract StrategyAaveLeveraged is StratManager, FeeManager, IUniswapV2Callee {
 
     // pauses deposits and withdraws all funds from third party systems.
     function panic() public onlyManager {
-        _deleverage();
+        _deleverageAll();
         pause();
     }
 
@@ -668,8 +712,7 @@ contract StrategyAaveLeveraged is StratManager, FeeManager, IUniswapV2Callee {
             // deleverage
             uint256 borrowBal = IERC20(_tokenBorrow).balanceOf(address(this));
             ILendingPool(lendingPool).repay(_tokenBorrow, borrowBal, INTEREST_RATE_MODE, address(this));
-            //ILendingPool(lendingPool).withdraw(want, amountToRepay, address(this));
-            ILendingPool(lendingPool).withdraw(want, type(uint).max, address(this));
+            ILendingPool(lendingPool).withdraw(want, amountToRepay, address(this));
         } else {
             // debt swap
             uint256 borrowBal = IERC20(_tokenBorrow).balanceOf(address(this));

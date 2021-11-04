@@ -12,7 +12,7 @@ abstract contract FeeManager is StratManager {
     uint constant public WITHDRAWAL_FEE_CAP = 50;
     uint constant public WITHDRAWAL_MAX = 10000;
 
-    uint public withdrawalFee = 10;
+    uint public withdrawalFee = 50;
 
     uint public callFee = 111;
     uint public beefyFee = MAX_FEE - STRATEGIST_FEE - callFee;

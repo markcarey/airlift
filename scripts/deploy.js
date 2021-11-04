@@ -35,7 +35,7 @@ async function main() {
       args.chainlink = "0x0715A7794a1dc8e42615F059dD6e406A6594651A"; // not updated for Polygon yet
       args.dai = "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063";
       args.usdc = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
-      args.aaveLendingPoolAddressProvider = "0x3ac4e9aa29940770aeC38fe853a4bbabb2dA9C19";
+      args.aaveLendingPoolAddressProvider = "0xd05e3E715d945B59290df0ae8eF85c1BdB684744";
     }
 
     const pilot = PUBLIC_KEY;

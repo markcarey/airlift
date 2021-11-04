@@ -9,13 +9,13 @@ const { createAlchemyWeb3 } = require("@alch/alchemy-web3");
 var BN = web3.utils.BN;
 
 const contract = require("../artifacts/contracts/vaults/Vault.sol/AirliftVaultV1.json");
-const contractAddress = "0x2134b2948b242788585e28E102D2B6dC8268aFBf"; // Vault
+const contractAddress = "0x9B3E08EA358dd8514a1e651Bd5896c3Aa6A9A0Ad"; // Vault
 const vaultContract = new web3.eth.Contract(contract.abi, contractAddress);
 
 //const strategy = require("../artifacts/contracts/strategies/Aave/StrategyAave.sol/StrategyAave.json");
 //const stratAddress = "0xEbcCC38Fb90D3e5e45835478137741Dd0FB06341";
 const strategy = require("../artifacts/contracts/strategies/Aave/StrategyAaveLeveraged.sol/StrategyAaveLeveraged.json");
-const stratAddress = "0x369593aaCA34B5B68E5b85d5F7aeFcdb658039f5";
+const stratAddress = "0xB71F2A5dD0704b782F07B792f57cf69293CB4A61";
 const stratContract = new web3.eth.Contract(strategy.abi, stratAddress);
 
 var addr = {};
@@ -833,9 +833,9 @@ async function getSomeWETH(eoa) {
 async function main() {
   //setStrategy("0x52ff8DcF61b8743515a3A7Ca5456A6227f43a55d");
   //upgradeStrat();
-  //await approve('2000000000000000000');
-  //await deposit('2000000000000000000');
-  userAccountData();
+  //await approve('4000000000000000000');
+  //await deposit('4000000000000000000');
+  //userAccountData();
   //rewardsAvailable();
   //lastHarvest();
   //rebalance(20,2);
@@ -859,7 +859,7 @@ async function main() {
   //totalSupply();
   //balanceOfVault(PUBLIC_KEY);
   //withdrawAmountVault('500000000000000000'); 
-  //setMinHealthFactor('1250000000000000000'); // 1.25
+  //setMinHealthFactor('2000000000000000000'); // 2
   //getRiskProfile();
   //balanceOfStrategy();
   //getTxn("0x08ccd87e8fd594af70ef5d9c212fde8de40196b7315cb93f4f57c697b70b3d97");
