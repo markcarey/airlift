@@ -1,5 +1,5 @@
 //var web3 = AlchemyWeb3.createAlchemyWeb3("wss://polygon-mumbai.g.alchemy.com/v2/Ptsa6JdQQUtTbRGM1Elvw_ed3cTszLoj");
-var web3 = AlchemyWeb3.createAlchemyWeb3("wss://localhost:8545");
+var web3 = AlchemyWeb3.createAlchemyWeb3("http://localhost:8545");
 var BN = web3.utils.BN;
 
 const vaultAddress = "0x46eC6c662d0eC5542Bd059613005D78f517b6892";
