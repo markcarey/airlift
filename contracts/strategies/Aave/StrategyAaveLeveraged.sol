@@ -171,45 +171,6 @@ contract StrategyAaveLeveraged is StratManager, FeeManager, IUniswapV2Callee, IU
         }
     }
 
-    function _leverageOLD(uint256 _amount) internal {
-        if (_amount < risk.minLeverage) { return; }
-
-        uint256 borrowPrice = _getAssetPrice(borrow);
-
-        for (uint i = 0; i < risk.borrowDepth; i++) {
-            uint256 wantBal = availableWant();
-            if ( _amount > wantBal ) {
-                _amount = wantBal;
-            }
-            if (_amount == 0) { return; }
-            ILendingPool(lendingPool).deposit(want, _amount, address(this), 0);
-            _amount = _amount.mul(risk.borrowRate).div(100);
-            if (_amount > 0) {
-                uint256 borrowAmt = _amount.div(borrowPrice).mul(1e18).mul(103).div(100);
-                ILendingPool(lendingPool).borrow(borrow, borrowAmt, INTEREST_RATE_MODE, 0, address(this));
-                //uint256 borrowBal = IERC20(borrow).balanceOf(address(this));
-                IUniswapRouterETH(unirouter).swapExactTokensForTokens(borrowAmt, 1, borrowToWantRoute, address(this), now);
-            }
-        }
-
-        reserves = reserves.add(_amount);
-        uint256 wantBal = IERC20(want).balanceOf(address(this));
-        if (reserves > wantBal) {
-            reserves = wantBal;
-        }
-    }
-
-    // temp: debug
-    function borrowAmount() public view returns (uint256) {
-        uint256 amt = availableWant();
-        amt = amt.mul(risk.borrowRate).div(100);
-        ILendingPoolAddressesProvider provider = ILendingPoolAddressesProvider(lendingPoolAddressProvider); 
-        address priceOracleAddress = provider.getPriceOracle();
-        IPriceOracleGetter priceOracle = IPriceOracleGetter(priceOracleAddress);
-        uint256 price = priceOracle.getAssetPrice(borrow);
-        amt = amt.div(price).mul(1e18).mul(103).div(100);
-        return amt;
-    }
     function getAssetPrice(address asset) public view returns (uint256) {
         ILendingPoolAddressesProvider provider = ILendingPoolAddressesProvider(lendingPoolAddressProvider); 
         address priceOracleAddress = provider.getPriceOracle();
@@ -239,99 +200,10 @@ contract StrategyAaveLeveraged is StratManager, FeeManager, IUniswapV2Callee, IU
         _flashSwapV3(borrow, _amount, want);
     }
 
-    /**
-     * @dev Incrementally alternates between paying part of the debt and withdrawing part of the supplied
-     * collateral. Continues to do this until it repays the entire debt and withdraws all the supplied {want}
-     * from the system
-     */
-    function _deleverageOLD() internal {
-        uint256 wantBal = IERC20(want).balanceOf(address(this));
-        uint256 borrowBal = IERC20(borrow).balanceOf(address(this));
-        (uint256 supplyBal, uint256 borrowedBal) = userReserves();
-
-        uint256 borrowPrice = _getAssetPrice(borrow);
-
-        while (borrowBal < borrowedBal) {
-            if (borrowBal == 0) {
-                if (wantBal > 0) {
-                    // should always be greater than zero
-                    IUniswapRouterETH(unirouter).swapExactTokensForTokens(wantBal, 1, wantToBorrowRoute, address(this), now);
-                    borrowBal = IERC20(borrow).balanceOf(address(this));
-                }
-            }
-            ILendingPool(lendingPool).repay(borrow, borrowBal, INTEREST_RATE_MODE, address(this));
-
-            (supplyBal, borrowedBal) = userReserves();
-            uint256 targetSupply = _targetSupplyinETH(risk.minHealthFactor);
-
-            ILendingPool(lendingPool).withdraw(want, supplyBal.sub(targetSupply), address(this));
-            wantBal = IERC20(want).balanceOf(address(this));
-            IUniswapRouterETH(unirouter).swapExactTokensForTokens(wantBal, 1, wantToBorrowRoute, address(this), now);
-            borrowBal = IERC20(borrow).balanceOf(address(this));
-        }
-
-        if (borrowedBal > 0) {
-            ILendingPool(lendingPool).repay(borrow, uint256(-1), INTEREST_RATE_MODE, address(this));
-        }
-        ILendingPool(lendingPool).withdraw(want, type(uint).max, address(this));
-
-        borrowBal = IERC20(borrow).balanceOf(address(this));
-        if (borrowBal > 0) {
-            IUniswapRouterETH(unirouter).swapExactTokensForTokens(borrowBal, 1, borrowToWantRoute, address(this), now);
-        }
-
-        reserves = 0;
-    }
-
     function _targetSupplyinETH(uint256 targetHealthFactor) internal returns (uint256) {
         (,uint256 totalDebtETH,,uint256 currentLiquidationThreshold,,uint256 healthFactor) = ILendingPool(lendingPool).getUserAccountData(address(this));
         uint256 targetSupply = totalDebtETH.div(currentLiquidationThreshold).mul(targetHealthFactor).div(1e14);
         return targetSupply;
-    }
-    //temp: debug
-    function targetSupplyinETH(uint256 targetHealthFactor) public view returns (uint256) {
-        (,uint256 totalDebtETH,,uint256 currentLiquidationThreshold,,uint256 healthFactor) = ILendingPool(lendingPool).getUserAccountData(address(this));
-        uint256 targetSupply = totalDebtETH.div(currentLiquidationThreshold).mul(targetHealthFactor).div(1e14);
-        return targetSupply;
-    }
-
-    // temp: debug
-    function withdrawAmount() public view returns (uint256) {
-        ILendingPoolAddressesProvider provider = ILendingPoolAddressesProvider(lendingPoolAddressProvider); 
-        address priceOracleAddress = provider.getPriceOracle();
-        IPriceOracleGetter priceOracle = IPriceOracleGetter(priceOracleAddress);
-        uint256 borrowPrice = priceOracle.getAssetPrice(borrow);
-        (uint256 supplyBal, uint256 borrowedBal) = userReserves();
-        uint256 targetSupply = borrowedBal.mul(borrowPrice).div(1e18);
-        targetSupply = targetSupply.mul(100).div(risk.borrowRate);
-        return targetSupply;
-    }
-
-    /**
-     * @dev Extra safety measure that allows us to manually unwind one level. In case we somehow get into
-     * as state where the cost of unwinding freezes the system. We can manually unwind a few levels
-     * with this function and then 'rebalance()' with new {borrowRate} and {borrowConfig} values.
-     * @param _targetHealthFactor configurable borrow rate in case it's required to unwind successfully
-     */
-    function deleverageOnce(uint256 _targetHealthFactor) external onlyManager {
-        uint256 wantBal = IERC20(want).balanceOf(address(this));
-        uint256 borrowBal = IERC20(borrow).balanceOf(address(this));
-        (uint256 supplyBal, uint256 borrowedBal) = userReserves();
-        uint256 targetSupply = _targetSupplyinETH(_targetHealthFactor);
-        ILendingPool(lendingPool).withdraw(want, supplyBal.sub(targetSupply), address(this));
-
-        wantBal = IERC20(want).balanceOf(address(this));
-        IUniswapRouterETH(unirouter).swapExactTokensForTokens(wantBal, 1, wantToBorrowRoute, address(this), now);
-        borrowBal = IERC20(borrow).balanceOf(address(this));
-        ILendingPool(lendingPool).repay(borrow, borrowBal, INTEREST_RATE_MODE, address(this));
-        
-        borrowBal = IERC20(borrow).balanceOf(address(this));
-        if (borrowBal > 0) {
-            IUniswapRouterETH(unirouter).swapExactTokensForTokens(borrowBal, 1, borrowToWantRoute, address(this), now);
-        }
-
-        wantBal = IERC20(want).balanceOf(address(this));
-        reserves = wantBal;
     }
 
     /**
