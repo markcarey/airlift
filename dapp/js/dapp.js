@@ -2,7 +2,7 @@
 var web3 = AlchemyWeb3.createAlchemyWeb3("http://localhost:8545");
 var BN = web3.utils.BN;
 
-const vaultAddress = "0x46eC6c662d0eC5542Bd059613005D78f517b6892";
+const vaultAddress = "0x11006fd3BDf0D3B35a94f6C29B191ebABCCe827a";
 const vault = new web3.eth.Contract(vaultABI, vaultAddress);
 //const wethAddress = "0x3C68CE8504087f89c640D02d133646d98e64ddd9"; // Mumbai
 const wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";  // Mainnet (fork)
