@@ -4,7 +4,8 @@ var BN = web3.utils.BN;
 
 const vaultAddress = "0x46eC6c662d0eC5542Bd059613005D78f517b6892";
 const vault = new web3.eth.Contract(vaultABI, vaultAddress);
-const wethAddress = "0x1CecC613A31A530452d67641c2885e954e662726";
+//const wethAddress = "0x3C68CE8504087f89c640D02d133646d98e64ddd9"; // Mumbai
+const wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";  // Mainnet (fork)
 const WETH = new web3.eth.Contract(tokenABI, wethAddress);
 
 var gas = web3.utils.toHex(new BN('2000000000')); // 2 Gwei;
@@ -124,7 +125,7 @@ async function updateStats() {
 
 async function addToken() {
     const tokenAddress = vaultAddress;
-    const tokenSymbol = 'WETH2X';
+    const tokenSymbol = '2XWETH';
     const tokenDecimals = 18;
     const tokenImage = 'https://airlift.finance/images/weth2x.png';
 
