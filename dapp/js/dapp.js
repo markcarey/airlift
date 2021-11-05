@@ -225,20 +225,25 @@ $( document ).ready(function() {
             });
             //console.log(txHash);
             var pendingTxHash = txHash;
-            web3.eth.subscribe('newBlockHeaders', async (error, event) => {
-                if (error) {
-                    console.log("error", error);
-                }
-                const blockTxHashes = (await web3.eth.getBlock(event.hash)).transactions;
+            if (dappChain != 31337) {
+                web3.eth.subscribe('newBlockHeaders', async (error, event) => {
+                    if (error) {
+                        console.log("error", error);
+                    }
+                    const blockTxHashes = (await web3.eth.getBlock(event.hash)).transactions;
 
-                if (blockTxHashes.includes(pendingTxHash)) {
-                    web3.eth.clearSubscriptions();
-                    //console.log("Bid received!");
-                    $("button.deposit").text("Deposited!");
-                    $("#amount").val(0.00);
-                    updateStats();
-                }
-            });
+                    if (blockTxHashes.includes(pendingTxHash)) {
+                        web3.eth.clearSubscriptions();
+                        $("button.deposit").text("Deposited!");
+                        $("#amount").val(0.00);
+                        updateStats();
+                    }
+                });
+            } else {
+                $("button.deposit").text("Deposited!");
+                $("#amount").val(0.00);
+                updateStats();
+            }
         } else {
             // need approval
             $("button.deposit").text("Approving...");
@@ -260,19 +265,24 @@ $( document ).ready(function() {
             });
             //console.log(txHash);
             var pendingTxHash = txHash;
-            web3.eth.subscribe('newBlockHeaders', async (error, event) => {
-                if (error) {
-                    console.log("error", error);
-                }
-                const blockTxHashes = (await web3.eth.getBlock(event.hash)).transactions;
+            if (dappChain != 31337) {
+                web3.eth.subscribe('newBlockHeaders', async (error, event) => {
+                    if (error) {
+                        console.log("error", error);
+                    }
+                    const blockTxHashes = (await web3.eth.getBlock(event.hash)).transactions;
 
-                if (blockTxHashes.includes(pendingTxHash)) {
-                    web3.eth.clearSubscriptions();
-                    //console.log("Bid received!");
-                    $("button.deposit").text("Deposit");
-                    approved = amt;
-                }
-            });
+                    if (blockTxHashes.includes(pendingTxHash)) {
+                        web3.eth.clearSubscriptions();
+                        //console.log("Bid received!");
+                        $("button.deposit").text("Deposit");
+                        approved = amt;
+                    }
+                });
+            } else {
+                $("button.deposit").text("Deposit");
+                approved = amt;
+            }
         }
     });
 
