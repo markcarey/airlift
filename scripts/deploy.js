@@ -8,7 +8,7 @@ async function main() {
   const { createAlchemyWeb3 } = require("@alch/alchemy-web3");
   //const web3 = createAlchemyWeb3(API_URL);
 
-    const chain = "polygon";
+    const chain = "ethereum";
     var args = {};
 
     if ( chain == "mumbai" ) {
@@ -36,6 +36,19 @@ async function main() {
       args.dai = "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063";
       args.usdc = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
       args.aaveLendingPoolAddressProvider = "0xd05e3E715d945B59290df0ae8eF85c1BdB684744";
+    }
+    if ( chain == "ethereum" ) {
+      // Ethereum Mainnet
+      args.weth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+      args.wmatic = "0x4da27a545c0c5B758a6BA100e3a049001de870f5"; // stkAAVE
+      args.aaveDataProvider = "0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d";
+      args.aaveLendingPool = "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9";
+      args.aaveIncentivesController = "0xd784927Ff2f95ba542BfC824c8a8a98F3495f6b5";
+      args.uniRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564"; // SwapRouter v3
+      args.chainlink = "0x0715A7794a1dc8e42615F059dD6e406A6594651A"; // not updated for Polygon yet
+      args.dai = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
+      args.usdc = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+      args.aaveLendingPoolAddressProvider = "0x52D306e36E3B6B02c153d0266ff0f85d18BCD413";
     }
 
     const pilot = PUBLIC_KEY;

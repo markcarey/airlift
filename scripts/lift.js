@@ -9,17 +9,17 @@ const { createAlchemyWeb3 } = require("@alch/alchemy-web3");
 var BN = web3.utils.BN;
 
 const contract = require("../artifacts/contracts/vaults/Vault.sol/AirliftVaultV1.json");
-const contractAddress = "0x9B3E08EA358dd8514a1e651Bd5896c3Aa6A9A0Ad"; // Vault
+const contractAddress = "0x46eC6c662d0eC5542Bd059613005D78f517b6892"; // Vault
 const vaultContract = new web3.eth.Contract(contract.abi, contractAddress);
 
 //const strategy = require("../artifacts/contracts/strategies/Aave/StrategyAave.sol/StrategyAave.json");
 //const stratAddress = "0xEbcCC38Fb90D3e5e45835478137741Dd0FB06341";
 const strategy = require("../artifacts/contracts/strategies/Aave/StrategyAaveLeveraged.sol/StrategyAaveLeveraged.json");
-const stratAddress = "0xB71F2A5dD0704b782F07B792f57cf69293CB4A61";
+const stratAddress = "0x1CecC613A31A530452d67641c2885e954e662726";
 const stratContract = new web3.eth.Contract(strategy.abi, stratAddress);
 
 var addr = {};
-const chain = "polygon";
+const chain = "ethereum";
 if (chain == "mumbai") {
   //Mumbai
   addr.dai = "0x001B3B4d0F3714Ca98ba10F6042DaEbF0B1B7b6F";
@@ -27,10 +27,16 @@ if (chain == "mumbai") {
   addr.usdc = "0x2058A9D7613eEE744279e3856Ef0eAda5FCbaA7e";
 }
 if (chain == "polygon") {
-  //Mumbai
+  //Polygon mainnet
   addr.dai = "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063";
   addr.WETH = "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619";
   addr.usdc = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
+}
+if (chain == "ethereum") {
+  //Ethereum Mainnet
+  addr.dai = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
+  addr.WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+  addr.usdc = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 }
 
 var ERC20abi = [
@@ -835,7 +841,7 @@ async function main() {
   //upgradeStrat();
   //await approve('4000000000000000000');
   //await deposit('4000000000000000000');
-  //userAccountData();
+  userAccountData();
   //rewardsAvailable();
   //lastHarvest();
   //rebalance(20,2);
@@ -865,10 +871,10 @@ async function main() {
   //getTxn("0x08ccd87e8fd594af70ef5d9c212fde8de40196b7315cb93f4f57c697b70b3d97");
   //debug("0x846f8bebc12d9f1636db99aa0347013e867ab42a2fec14973d112f6a9cd1984d");
   //getVaultFromStrat();
-  //getSomeWETH("0xfC92D5adbaEB43F6A775C8824E3F9c6bC3d3E201");
-  //getSomeWETH("0x72b40Caa258c237c6F5947E291650808B913e9fC");
-  //getSomeWETH("0x4103c267Fba03A1Df4fe84Bc28092d629Fa3f422"); // 56 WETH
-  //userReserves();
+  //getSomeWETH("0xE815c19AbEf49D1a6cEe179a0d03dCd950448269"); // 75 WETH mainnet
+  //getSomeWETH("0x5a5617BA16Beba3d04ae3C6b1e9d522c1856763C"); // 6x WETH mainnet
+  //getSomeWETH("0x4103c267Fba03A1Df4fe84Bc28092d629Fa3f422"); // 56 WETH Polygon
+  userReserves();
   //setBorrow(addr.dai);
 }
 

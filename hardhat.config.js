@@ -11,7 +11,7 @@ module.exports = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 1000
+        runs: 1
       }
     }
   },
@@ -23,7 +23,9 @@ module.exports = {
           url: HH_API_URL,
           blockNumber: 20935392  // assumes polygon fork
         },
-        loggingEnabled: true
+        loggingEnabled: true,
+        gasMultiplier: 5,
+        gasPrice: 1000000000 * 4
       },
       mumbai: {
         url: API_URL,

@@ -20,25 +20,16 @@ import "../../interfaces/aave/ILendingPoolAddressesProvider.sol";
 import "../../interfaces/aave/IPriceOracleGetter.sol";
 import "../../interfaces/common/IUniswapRouterETH.sol";
 import "../../interfaces/common/IUniswapV2Pair.sol";
+import "../../interfaces/common/IUniswapV2Callee.sol";
+import "../../interfaces/common/IUniswapV2Factory.sol";
+import "../../interfaces/common/IUniswapV3Factory.sol";
+import "../../interfaces/common/IUniswapV3Pool.sol";
+import "../../interfaces/common/IUniswapV3SwapCallback.sol";
 import "../../interfaces/common/IERC20Extended.sol";
 import "../Common/FeeManager.sol";
 import "../Common/StratManager.sol";
 
-interface IUniswapV2Callee {
-    function uniswapV2Call(address sender, uint amount0, uint amount1, bytes calldata data) external;
-}
-
-interface IUniswapV2Factory {
-  event PairCreated(address indexed token0, address indexed token1, address pair, uint);
-  function getPair(address tokenA, address tokenB) external view returns (address pair);
-  function allPairs(uint) external view returns (address pair);
-  function allPairsLength() external view returns (uint);
-  function feeTo() external view returns (address);
-  function feeToSetter() external view returns (address);
-  function createPair(address tokenA, address tokenB) external returns (address pair);
-}
-
-contract StrategyAaveLeveraged is StratManager, FeeManager, IUniswapV2Callee {
+contract StrategyAaveLeveraged is StratManager, FeeManager, IUniswapV2Callee, IUniswapV3SwapCallback {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -176,7 +167,7 @@ contract StrategyAaveLeveraged is StratManager, FeeManager, IUniswapV2Callee {
             needed += _amount;
         }
         if (needed > 0) {
-            _flashSwap(want, needed, borrow);
+            _flashSwapV3(want, needed, borrow);
         }
     }
 
@@ -245,7 +236,7 @@ contract StrategyAaveLeveraged is StratManager, FeeManager, IUniswapV2Callee {
         _deleverage(borrowedBal);
     }
     function _deleverage(uint256 _amount) internal {
-        _flashSwap(borrow, _amount, want);
+        _flashSwapV3(borrow, _amount, want);
     }
 
     /**
@@ -381,7 +372,7 @@ contract StrategyAaveLeveraged is StratManager, FeeManager, IUniswapV2Callee {
         (,uint256 borrowedBal) = userReserves();
         require(borrowedBal > 0, "!nodebt");
         IERC20(_borrow).approve(lendingPool, uint256(-1));
-        _flashSwap(borrow, borrowedBal, _borrow);
+        _flashSwapV3(borrow, borrowedBal, _borrow);
         borrow = _borrow;
     }
 
@@ -649,6 +640,89 @@ contract StrategyAaveLeveraged is StratManager, FeeManager, IUniswapV2Callee {
         IERC20(want).safeApprove(unirouter, 0);
         IERC20(native).safeApprove(unirouter, 0);
     }
+
+
+    // v3 Flash Swaps
+    function _flashSwapV3(
+        address _tokenBorrow,
+        uint _amount,
+        address _tokenPay
+    ) private {
+        console.log("start flash swap", _tokenBorrow, _amount, _tokenPay);
+        IUniswapV3Factory uniswapV3Factory = IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984); // uni v3 mainnet
+        permissionedPairAddress = uniswapV3Factory.getPool(_tokenBorrow, _tokenPay, 500);
+        address pairAddress = permissionedPairAddress;
+        require(permissionedPairAddress != address(0), "Requested pair is not available.");
+        address token0 = IUniswapV3Pool(pairAddress).token0();
+        address token1 = IUniswapV3Pool(pairAddress).token1();
+        console.log("token0, token1", token0, token1);
+        bool zeroForOne = _tokenBorrow == token0 ? false : true;
+        bytes memory data = abi.encode(
+            _tokenBorrow,
+            _amount,
+            _tokenPay
+        );
+        uint160 minSQRT = 4295128740;
+        uint160 maxSQRT = 1461446703485210103287273052203988822378723970341;
+        uint160 sqrtPriceLimitX96 = zeroForOne ? minSQRT : maxSQRT;
+        console.log('ready to v3swap:', zeroForOne);
+        console.logInt(int256(_amount));
+        console.logInt(sqrtPriceLimitX96);
+        IUniswapV3Pool(pairAddress).swap(address(this), zeroForOne, int256(_amount) * -1, sqrtPriceLimitX96, data);
+    }
+
+     // @notice Function is called by the Uniswap V2 pair's `swap` function
+     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata _data) external override {
+        console.log("start uniswapV3SwapCallback");
+        console.logInt(amount0Delta);
+        console.logInt(amount1Delta);
+        // access control
+        require(msg.sender == permissionedPairAddress, "only permissioned UniswapV3Pool can call");
+        // decode data
+        (
+            address _tokenBorrow,
+            uint _amount,
+            address _tokenPay
+        ) = abi.decode(_data, (address, uint, address));
+        console.log("decoded", _tokenBorrow, _amount, _tokenPay);
+        
+        // compute the amount of _tokenPay that needs to be repaid
+        address pairAddress = permissionedPairAddress; // gas efficiency
+        uint256 amountToRepay = uint256( amount0Delta > 0 ? amount0Delta: amount1Delta );
+        console.log("amountToRepay", amountToRepay);
+
+        // get the orignal tokens the user requested
+        address tokenBorrowed = _tokenBorrow;
+        address tokenToRepay = _tokenPay;
+
+        // do whatever the user wants
+        //execute(tokenBorrowed, _amount, tokenToRepay, amountToRepay, _userData);
+        if (tokenBorrowed == want) {
+            // leverage
+            uint256 wantBal = availableWant();
+            ILendingPool(lendingPool).deposit(want, wantBal, address(this), 0);
+            ILendingPool(lendingPool).borrow(tokenToRepay, amountToRepay, INTEREST_RATE_MODE, 0, address(this));
+        } else if (tokenToRepay == want) {
+            // deleverage
+            uint256 borrowBal = IERC20(_tokenBorrow).balanceOf(address(this));
+            ILendingPool(lendingPool).repay(_tokenBorrow, borrowBal, INTEREST_RATE_MODE, address(this));
+            ILendingPool(lendingPool).withdraw(want, amountToRepay, address(this));
+        } else {
+            // debt swap
+            uint256 borrowBal = IERC20(_tokenBorrow).balanceOf(address(this));
+            console.log("borrow balance", _tokenBorrow, borrowBal);
+            ILendingPool(lendingPool).repay(_tokenBorrow, borrowBal, INTEREST_RATE_MODE, address(this));
+            console.log("after repay aave");
+            borrowBal = IERC20(_tokenBorrow).balanceOf(address(this));
+            console.log("borrow balance", _tokenBorrow, borrowBal);
+            ILendingPool(lendingPool).borrow(tokenToRepay, amountToRepay, INTEREST_RATE_MODE, 0, address(this));
+            uint256 repayBal = IERC20(tokenToRepay).balanceOf(address(this));
+            console.log("repay balance", tokenToRepay, repayBal);
+        }
+
+        // payback loan 
+        IERC20(_tokenPay).transfer(pairAddress, amountToRepay);
+     }
 
 
     // v2 Flash Swaps
