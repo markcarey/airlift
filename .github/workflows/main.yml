@@ -2,7 +2,7 @@ name: Deploy to Skynet
 
 on:
   push:
-    branches: [main]
+    branches: [main, v3-flash-swaps]
 
 jobs:
   build:
