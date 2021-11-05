@@ -109,13 +109,15 @@ function fromWei(amount) {
 }
 
 async function updateStats() {
-    wethBal = await WETH.methods.balanceOf(ethereum.selectedAddress).call();
     vaultBal = await vault.methods.totalSupply().call();
     vaultPrice = await vault.methods.getPricePerFullShare().call();
     TVL = web3.utils.fromWei(vaultBal) * web3.utils.fromWei(vaultPrice);
-    userBal = await vault.methods.balanceOf(ethereum.selectedAddress).call();
-    userShare = web3.utils.fromWei(userBal) / web3.utils.fromWei(vaultBal) * 100; 
     var since = (web3.utils.fromWei(vaultPrice) - 1) / 1 * 100;
+    if (ethereum.selectedAddress) {
+        wethBal = await WETH.methods.balanceOf(ethereum.selectedAddress).call();
+        userBal = await vault.methods.balanceOf(ethereum.selectedAddress).call();
+        userShare = web3.utils.fromWei(userBal) / web3.utils.fromWei(vaultBal) * 100; 
+    }
     console.log(vaultBal, vaultPrice, TVL);
     $(".tvl").text( TVL.toFixed(4) );
     $(".since").text( since.toFixed(2) + "%" );
