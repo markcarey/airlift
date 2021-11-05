@@ -32,7 +32,7 @@ function abbrAddress(address){
 
 async function main() {
     dappChain = await web3.eth.getChainId();
-    //console.log("The chainId is " + dappChain);
+    console.log("The chainId is " + dappChain);
 
     accounts = await web3.eth.getAccounts();
     //connectWallet();
@@ -45,7 +45,7 @@ async function main() {
     }
 
     userChain = await ethereum.request({ method: 'eth_chainId' });
-    //console.log("The chainId of connected account is " + web3.utils.hexToNumber(userChain));
+    console.log("The chainId of connected account is " + web3.utils.hexToNumber(userChain));
 
     if ( !correctChain() ) {
         $("body").append(wrongNetworkModal());
