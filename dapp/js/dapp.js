@@ -48,10 +48,10 @@ async function main() {
     console.log("The chainId of connected account is " + web3.utils.hexToNumber(userChain));
 
     if ( !correctChain() ) {
-        $("body").append(wrongNetworkModal());
-        $(".close, .modal-backdrop").click(function(){
-            $(".fade.show").remove();
-        });
+        //$("body").append(wrongNetworkModal());
+        //$(".close, .modal-backdrop").click(function(){
+        //    $(".fade.show").remove();
+        //});
     }
 
     window.ethereum.on('accountsChanged', function () {
@@ -351,7 +351,7 @@ function wrongNetworkModal(ctx){
             <div class="modal-content">
             <div class="modal-header"><div class="modal-title-custom modal-title h4">Switch Network</div></div>
                 <div class="modal-body" style="margin-left: 20px;">
-                    <p>Airlift is currently on the Mumbai Test Network. Mainnet launch coming soon.</p>
+                    <p>Airlift is currently deployed on a fork of mainnet.</p>
                     <p><b>To get started, please switch your network by following the instructions below:</b></p>
                     <ol>
                         <li>Open Metamask</li>
