@@ -20716,7 +20716,7 @@ input[type=number] {
 }
 
 .price_aa {
-    font-size: small;
+    font-size: large;
     color: var(--theme-price-text)
 }
 
