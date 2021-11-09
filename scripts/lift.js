@@ -9,13 +9,13 @@ const { createAlchemyWeb3 } = require("@alch/alchemy-web3");
 var BN = web3.utils.BN;
 
 const contract = require("../artifacts/contracts/vaults/Vault.sol/AirliftVaultV1.json");
-const contractAddress = "0x46eC6c662d0eC5542Bd059613005D78f517b6892"; // Vault
+const contractAddress = "0xAF7DE44b62c401521653628d10e411972c762c6c"; // Vault
 const vaultContract = new web3.eth.Contract(contract.abi, contractAddress);
 
 //const strategy = require("../artifacts/contracts/strategies/Aave/StrategyAave.sol/StrategyAave.json");
 //const stratAddress = "0xEbcCC38Fb90D3e5e45835478137741Dd0FB06341";
 const strategy = require("../artifacts/contracts/strategies/Aave/StrategyAaveLeveraged.sol/StrategyAaveLeveraged.json");
-const stratAddress = "0x1CecC613A31A530452d67641c2885e954e662726";
+const stratAddress = "0xa4B8C0e5dDB4677b0B545CB36A8f1Daa050d22cA";
 const stratContract = new web3.eth.Contract(strategy.abi, stratAddress);
 
 var addr = {};
@@ -841,7 +841,7 @@ async function main() {
   //upgradeStrat();
   //await approve('4000000000000000000');
   //await deposit('4000000000000000000');
-  userAccountData();
+  //userAccountData();
   //rewardsAvailable();
   //lastHarvest();
   //rebalance(20,2);
@@ -871,10 +871,10 @@ async function main() {
   //getTxn("0x08ccd87e8fd594af70ef5d9c212fde8de40196b7315cb93f4f57c697b70b3d97");
   //debug("0x846f8bebc12d9f1636db99aa0347013e867ab42a2fec14973d112f6a9cd1984d");
   //getVaultFromStrat();
-  //getSomeWETH("0xE815c19AbEf49D1a6cEe179a0d03dCd950448269"); // 75 WETH mainnet
+  getSomeWETH("0xE815c19AbEf49D1a6cEe179a0d03dCd950448269"); // 75 WETH mainnet
   //getSomeWETH("0x5a5617BA16Beba3d04ae3C6b1e9d522c1856763C"); // 6x WETH mainnet
   //getSomeWETH("0x4103c267Fba03A1Df4fe84Bc28092d629Fa3f422"); // 56 WETH Polygon
-  userReserves();
+  //userReserves();
   //setBorrow(addr.dai);
 }
 
