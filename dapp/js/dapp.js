@@ -8,6 +8,9 @@ const vault = new web3.eth.Contract(vaultABI, vaultAddress);
 const wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";  // Mainnet (fork)
 const WETH = new web3.eth.Contract(tokenABI, wethAddress);
 
+const stratAddress = "0xa4B8C0e5dDB4677b0B545CB36A8f1Daa050d22cA";
+const stratContract = new web3.eth.Contract(strategyABI, stratAddress);
+
 var gas = web3.utils.toHex(new BN('2000000000000')); // 2000 Gwei;
 var dappChain = 80001; // default to Mumbai
 var userChain;
@@ -123,6 +126,10 @@ async function updateStats() {
     $(".since").text( since.toFixed(2) + "%" );
     $(".balance").text( parseFloat(web3.utils.fromWei(userBal)).toFixed(4) );
     $(".share").text( userShare.toFixed(4) + "%" );
+    const data = await stratContract.methods.userReserves().call();
+    var weth = web3.utils.fromWei(data[0]);
+    var usd = web3.utils.fromWei(data[1]);
+    $(".debt").text( parseFloat(web3.utils.fromWei(data[1])).toFixed(0) );
 }
 
 async function addToken() {

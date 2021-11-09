@@ -871,10 +871,10 @@ async function main() {
   //getTxn("0x08ccd87e8fd594af70ef5d9c212fde8de40196b7315cb93f4f57c697b70b3d97");
   //debug("0x846f8bebc12d9f1636db99aa0347013e867ab42a2fec14973d112f6a9cd1984d");
   //getVaultFromStrat();
-  getSomeWETH("0xE815c19AbEf49D1a6cEe179a0d03dCd950448269"); // 75 WETH mainnet
+  //getSomeWETH("0xE815c19AbEf49D1a6cEe179a0d03dCd950448269"); // 75 WETH mainnet
   //getSomeWETH("0x5a5617BA16Beba3d04ae3C6b1e9d522c1856763C"); // 6x WETH mainnet
   //getSomeWETH("0x4103c267Fba03A1Df4fe84Bc28092d629Fa3f422"); // 56 WETH Polygon
-  //userReserves();
+  userReserves();
   //setBorrow(addr.dai);
 }
 
