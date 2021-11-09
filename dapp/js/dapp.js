@@ -8,7 +8,7 @@ const vault = new web3.eth.Contract(vaultABI, vaultAddress);
 const wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";  // Mainnet (fork)
 const WETH = new web3.eth.Contract(tokenABI, wethAddress);
 
-var gas = web3.utils.toHex(new BN('2000000000')); // 2 Gwei;
+var gas = web3.utils.toHex(new BN('20000000000')); // 2 Gwei;
 var dappChain = 80001; // default to Mumbai
 var userChain;
 var accounts;
