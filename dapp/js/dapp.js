@@ -129,6 +129,7 @@ async function updateStats() {
     const data = await stratContract.methods.userReserves().call();
     var weth = web3.utils.fromWei(data[0]);
     var usd = web3.utils.fromWei(data[1]);
+    $(".want").text( parseFloat(web3.utils.fromWei(data[0])).toFixed(4) );
     $(".debt").text( parseFloat(web3.utils.fromWei(data[1])).toFixed(0) );
 }
 
